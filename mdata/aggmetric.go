@@ -148,8 +148,8 @@ func (a *AggMetric) SyncAggregatedChunkSaveState(ts uint32, consolidator consoli
 
 func (a *AggMetric) GetAggregated(consolidator consolidation.Consolidator, aggSpan, from, to uint32) (Result, error) {
 	// no lock needed cause aggregators don't change at runtime
-	for _, a := range a.aggregators {
-		if a.span == aggSpan {
+	for _, aggregator := range a.aggregators {
+		if aggregator.span == aggSpan {
 			var agg *AggMetric
 			switch consolidator {
 			case consolidation.None:
@@ -163,15 +163,15 @@ func (a *AggMetric) GetAggregated(consolidator consolidation.Consolidator, aggSp
 				badConsolidator.Inc()
 				return Result{}, err
 			case consolidation.Cnt:
-				agg = a.cntMetric
+				agg = aggregator.cntMetric
 			case consolidation.Lst:
-				agg = a.lstMetric
+				agg = aggregator.lstMetric
 			case consolidation.Min:
-				agg = a.minMetric
+				agg = aggregator.minMetric
 			case consolidation.Max:
-				agg = a.maxMetric
+				agg = aggregator.maxMetric
 			case consolidation.Sum:
-				agg = a.sumMetric
+				agg = aggregator.sumMetric
 			default:
 				err := fmt.Errorf("internal error: AggMetric.GetAggregated(): unknown consolidator %q", consolidator)
 				log.Errorf("AM: %s", err.Error())
@@ -181,7 +181,13 @@ func (a *AggMetric) GetAggregated(consolidator consolidation.Consolidator, aggSp
 			if agg == nil {
 				return Result{}, fmt.Errorf("Consolidator %q not configured", consolidator)
 			}
-			return agg.Get(from, to)
+			result, err := agg.Get(from, to)
+			if err != nil {
+				return Result{}, err
+			}
+			result.Points = aggregator.Foresee(consolidator, from, to, a.rob.Get())
+
+			return result, nil
 		}
 	}
 	err := fmt.Errorf("internal error: AggMetric.GetAggregated(): unknown aggSpan %d", aggSpan)
@@ -427,7 +433,7 @@ func (a *AggMetric) persist(pos int) {
 		pendingChunk--
 	}
 	persistDuration.Value(time.Now().Sub(pre))
-	return
+
 }
 
 // don't ever call with a ts of 0, cause we use 0 to mean not initialized!
