@@ -125,7 +125,7 @@ func peekAndReset(aggregation *Aggregation, consolidator consolidation.Consolida
 // Foresee won't actually add those points to AggMetric.
 func (agg *Aggregator) Foresee(consolidator consolidation.Consolidator, from, to uint32, futurePoints []schema.Point) []schema.Point {
 	aggregationPreview := *(agg.agg)
-	aggregatedPoints := make([]schema.Point, len(futurePoints))
+	var aggregatedPoints []schema.Point
 	currentBoundary := agg.currentBoundary
 	for _, point := range futurePoints {
 		boundary := AggBoundary(point.Ts, agg.span)
