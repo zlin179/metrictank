@@ -100,26 +100,6 @@ func (agg *Aggregator) flush() {
 	agg.agg.Reset()
 }
 
-// peekAndReset returns the aggregated point according to consolidator, and resets aggregation state
-func peekAndReset(aggregation *Aggregation, consolidator consolidation.Consolidator, currentBoundary uint32) schema.Point {
-	aggregatedPoint := schema.Point{Val: 0, Ts: 0}
-	// aggMetric.getAggregated guarantees that consolidator should be one of the following.
-	switch consolidator {
-	case consolidation.Cnt:
-		aggregatedPoint = schema.Point{Val: aggregation.Cnt, Ts: currentBoundary}
-	case consolidation.Lst:
-		aggregatedPoint = schema.Point{Val: aggregation.Lst, Ts: currentBoundary}
-	case consolidation.Min:
-		aggregatedPoint = schema.Point{Val: aggregation.Min, Ts: currentBoundary}
-	case consolidation.Max:
-		aggregatedPoint = schema.Point{Val: aggregation.Max, Ts: currentBoundary}
-	case consolidation.Sum:
-		aggregatedPoint = schema.Point{Val: aggregation.Sum, Ts: currentBoundary}
-	}
-	aggregation.Reset()
-	return aggregatedPoint
-}
-
 // Foresee duplicates the underlying Aggregation,
 // consumes points in the future, and return the newly aggregated points.
 // Foresee won't actually add those points to AggMetric.
@@ -137,13 +117,16 @@ func (agg *Aggregator) Foresee(consolidator consolidation.Consolidator, from, to
 			// store current aggregates as a new point in their series and start the new bucket
 			// if the cnt is still 0, the numbers are invalid, not to be flushed and we can simply reuse the aggregation
 			if aggregationPreview.Cnt != 0 {
-				aggregatedPoints = append(aggregatedPoints, peekAndReset(&aggregationPreview, consolidator, currentBoundary))
+				value, _ := aggregationPreview.Get(consolidator)
+				aggregatedPoints = append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
+				aggregationPreview.Reset()
 			}
 			currentBoundary = boundary
 		}
 		aggregationPreview.Add(point.Val)
 	}
-	return append(aggregatedPoints, peekAndReset(&aggregationPreview, consolidator, currentBoundary))
+	value, _ := aggregationPreview.Get(consolidator)
+	return append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
 }
 
 // Add adds the point to the in-progress aggregation, and flushes it if we reached the boundary
