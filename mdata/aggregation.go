@@ -25,7 +25,7 @@ func NewAggregation() *Aggregation {
 	}
 }
 
-func (a *Aggregation) Get(consolidator consolidation.Consolidator) (float64, error) {
+func (a *Aggregation) GetValueFor(consolidator consolidation.Consolidator) (float64, error) {
 	switch consolidator {
 	case consolidation.Cnt:
 		return a.Cnt, nil

@@ -117,7 +117,7 @@ func (agg *Aggregator) Foresee(consolidator consolidation.Consolidator, from, to
 			// store current aggregates as a new point in their series and start the new bucket
 			// if the cnt is still 0, the numbers are invalid, not to be flushed and we can simply reuse the aggregation
 			if aggregationPreview.Cnt != 0 {
-				value, _ := aggregationPreview.Get(consolidator)
+				value, _ := aggregationPreview.GetValueFor(consolidator)
 				aggregatedPoints = append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
 				aggregationPreview.Reset()
 			}
@@ -125,7 +125,7 @@ func (agg *Aggregator) Foresee(consolidator consolidation.Consolidator, from, to
 		}
 		aggregationPreview.Add(point.Val)
 	}
-	value, _ := aggregationPreview.Get(consolidator)
+	value, _ := aggregationPreview.GetValueFor(consolidator)
 	return append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
 }
 
