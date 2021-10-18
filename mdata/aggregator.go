@@ -125,8 +125,11 @@ func (agg *Aggregator) Foresee(consolidator consolidation.Consolidator, from, to
 		}
 		aggregationPreview.Add(point.Val)
 	}
-	value, _ := aggregationPreview.GetValueFor(consolidator)
-	return append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
+	if currentBoundary <= to {
+		value, _ := aggregationPreview.GetValueFor(consolidator)
+		aggregatedPoints = append(aggregatedPoints, schema.Point{Val: value, Ts: currentBoundary})
+	}
+	return aggregatedPoints
 }
 
 // Add adds the point to the in-progress aggregation, and flushes it if we reached the boundary

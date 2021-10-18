@@ -252,12 +252,12 @@ func TestAggregator(t *testing.T) {
 			{Val: 4, Ts: 360},
 		},
 	)
+	// Ts:360 should not be returned given span (0, 359)
 	comparePoints(
 		"simple-cnt-foresee",
-		agg.Foresee(consolidation.Cnt, 0, 1000, futurePoints),
+		agg.Foresee(consolidation.Cnt, 0, 359, futurePoints),
 		[]schema.Point{
 			{Val: 3, Ts: 300},
-			{Val: 1, Ts: 360},
 		},
 	)
 	comparePoints(

@@ -179,13 +179,20 @@ func (a *AggMetric) GetAggregated(consolidator consolidation.Consolidator, aggSp
 				return Result{}, err
 			}
 			if agg == nil {
-				return Result{}, fmt.Errorf("Consolidator %q not configured", consolidator)
+				return Result{}, fmt.Errorf("consolidator %q not configured", consolidator)
 			}
 			result, err := agg.Get(from, to)
 			if err != nil {
 				return Result{}, err
 			}
-			result.Points = aggregator.Foresee(consolidator, from, to, a.rob.Get())
+			futurePoints := []schema.Point{}
+			if a.rob != nil {
+				futurePoints = a.rob.Get()
+			}
+			result.Points = aggregator.Foresee(consolidator, from, to, futurePoints)
+			if result.Oldest > result.Points[0].Ts {
+				result.Oldest = result.Points[0].Ts
+			}
 
 			return result, nil
 		}
